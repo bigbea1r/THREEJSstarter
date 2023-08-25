@@ -5,7 +5,7 @@ import * as dat from 'dat.gui'
 import * as anime from 'animejs/lib/anime'
 import {BufferGeometryUtils} from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 // Debug
-const gui = new dat.GUI()
+//const gui = new dat.GUI()
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -13,12 +13,6 @@ const canvas = document.querySelector('canvas.webgl')
 // Scene
 const scene = new THREE.Scene()
 
-const settings = {
-  // Анимация
-  animate: true,
-  // Разная лабуда
-  attributes: { antialias: true }
-};
 
 // Lights
 
@@ -56,7 +50,7 @@ const settings = {
 
   // Создание сферы, которую мы будем видеть — для скрытия заднего вида самой карты
   const geomHide = new THREE.SphereBufferGeometry(1.0499, 64, 36);
-  const matHide=new THREE.MeshStandardMaterial({color:new THREE.Color(0x091e5a)});
+  const matHide=new THREE.MeshStandardMaterial({color:new THREE.Color(0x091e5a)}); //0x340345
   const meshHide= new THREE.Mesh(geomHide, matHide);
 
   //Добавляем объекты на сцену
@@ -68,21 +62,18 @@ const settings = {
   
 
   function addMapInf(posCil1,posCir2,main=false){
-      // Принимает парамерты:
-        //posCil1 => array(1,2,3)
-        //posCil2 => array(1,2,3)
-        //main => boolean
-      let mainSize=// если main = true, то значит это ПЕРВЫЙ «флагшток» (освновная позиция на карте)
-          mSC=null,// размер круга под цилиндром
-          color=0x008DFB;//цвет по умолчанию — это цвет НЕглавных «флагштоков»
-      if(main){// если это первый «флагшток»
-          mainSize=[.004,.004,.3,3];
-          mSC=[.017,24];
-          color=0x86c3f9
-      }else{ // если остальные флагштоки, то их размер чуть меньше основного
-          mainSize=[.002,.002,.16,4]
-          mSC=[.01,12]
-      };
+    // Принимает парамерты://posCil1 => array(1,2,3)//posCil2 => array(1,2,3)//main => boolean
+    let mainSize=null// если main = true, то значит это ПЕРВЫЙ «флагшток» (освновная позиция на карте)
+    let mSC=null// размер круга под цилиндром
+    let color=0x008DFB;//цвет по умолчанию — это цвет НЕглавных «флагштоков»
+    if(main){// если это первый «флагшток»
+        mainSize=[.004,.004,.3,3];
+        mSC=[.017,24];
+        color=0x86c3f9
+    }else{ // если остальные флагштоки, то их размер чуть меньше основного
+        mainSize=[.002,.002,.16,4]
+        mSC=[.01,12]
+    };
       // Создание цилиндра
       const cyl=new THREE.CylinderBufferGeometry(mainSize[0],mainSize[1],mainSize[2],mainSize[3]);
       const cylinder=new THREE.Mesh(
@@ -155,7 +146,7 @@ const settings = {
           const textGeo = new THREE.TextGeometry(text,{
             font,
             size,
-            height: .04,
+            height: .008,
             curveSegments: 12,
             /* bevelEnabled: true,
             bevelThickness: 10,
@@ -175,14 +166,13 @@ const settings = {
           parent.add(text);
           return text;
       }
-        const txt1=createText('The center of the earth',[-.64,1,-.3],[0,1.95,0],.05,font)
-        const txt2=createText('Saint-Petersburg',[-.64,.89,-.3],[0,1.95,0],.05,font,0x858585);
-
+      const txt1=createText('The center of the earth',[.617,.97,-.14],[0,1.95,0],.03,font);
+      const txt2=createText('Saint-Petersburg',[.617,.91,-.14],[0,1.95,0],.03,font,0x84B3DF);
         const mainPos=[.662,.8,-.28];
         anime.timeline().add({
             targets:txt1.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear'
         }).add({
-            targets:txt2.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,delay:1000,easing:'linear',complete:()=>{
+            targets:txt2.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,delay:100,easing:'linear',complete:()=>{
                 //(main)
                 let c1=addMapInf([.66,.95,-.28],mainPos,true);
                 anime({targets:c1[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:100,easing:'linear'});
@@ -431,7 +421,10 @@ scene.add(camera)
 // Controls
  const controls = new OrbitControls(camera, canvas)
  controls.enableDamping = true
+ controls.dampingFactor = .01;
 
+ controls.minPolarAngle =1.2;
+ controls.maxPolarAngle = 1.2;
 /**
  * Renderer
  */
@@ -440,35 +433,53 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.setClearColor('#333', 1);
+renderer.setClearColor('#000', 1);
 
 /**
  * Animate
  */
 
 const clock = new THREE.Clock()
-
-
 const tick = () =>
 {
 
     const elapsedTime = clock.getElapsedTime()
 
     // Update objects
-    //mesh.rotation.y = .5 * elapsedTime
-    //sphere.rotation.y = .5 * elapsedTime
+    mesh.rotation.y = elapsedTime / 50
 
-    // Update Orbital Controls
-    controls.update()
+    /* function rotateRadians(deg){
+      return deg * (Math.PI / 180);
+    }
+    animejs({
+      loop: true,
+      targets: mesh.rotation,
+      // z: [rotateRadians(360), rotateRadians(0)],
+      //x: [rotateRadians(360), rotateRadians(0)],
+      y: [rotateRadians(-360), rotateRadians(360)],
+      duration: 2000,
+      easing: "linear"
+    }); */
 
     // Render
     renderer.render(scene, camera)
 
-    lightHolder.quaternion.copy(camera.quaternion);//!!!!!!
+    lightHolder.quaternion.copy(camera.quaternion);
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
+
+    lineMesh.forEach(e=>{
+        e.material.uniforms.dashOffset.value -= 0.01
+    });
+    TWEEN.update();
 }
 
-tick()
-
+tick();
+// стили, скрывающие прокрутку
+const d_=document;
+const s_=d_.createElement('style');
+s_.innerText=`
+body{margin:0;overflow:hidden}
+`;
+d_.body.appendChild(s_)
