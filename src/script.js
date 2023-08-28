@@ -1,144 +1,100 @@
-import './style.css'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-//import * as dat from 'dat.gui'
-import * as anime from 'animejs/lib/anime'
-import {BufferGeometryUtils} from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-// Debug
-//const gui = new dat.GUI()
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
+import * as animejs from 'animejs/lib/anime'
+import {BufferGeometryUtils} from 'three/examples/jsm/utils/BufferGeometryUtils'
+// Урок 2-7
+import {TWEEN} from 'three/examples/jsm/libs/tween.module.min'
 
-// Canvas
 const canvas = document.querySelector('canvas.webgl')
-
-// Scene
 const scene = new THREE.Scene()
 
-
-// Lights
-
-  // Создание группы для СВЕТОВ!
   const lightHolder = new THREE.Group();
+  const geometry = new THREE.IcosahedronBufferGeometry(1.0,2);
 
-  // Создание простого Света!
+  // Создание материала для икосахедрона (сферы)
+  const materialIcosahedron = new THREE.MeshBasicMaterial({
+    opacity: 1,
+    transparent: true,
+    //wireframe: true,
+  });
+
   const aLight=new THREE.DirectionalLight(0xffffff,2);
 
   // Установка позиции для этого света
-  aLight.position.set(-1.5,1.7,.7); //[по Z, по У, по Х ]
+  aLight.position.set(-1.5,1.7,.7);
 
   // Прикрепляем к удержателю позиции света, чтобы он дальше не крутился вместе с объектами на сцене
+  //!!! Раскомментируйте, если нужна «голубая сфера» | Код ниже добавляет Свет на сцену
   lightHolder.add(aLight);
 
   // Второй дополнительный свет
   const aLight2=new THREE.DirectionalLight(0xffffff,2);
-  aLight2.position.set(-1.5,0.3,.7); //[по Z, по У, по Х ]
+  aLight2.position.set(-1.5,0.3,.7);
+  //!!! Раскомментируйте, если нужна «голубая сфера» | Код ниже добавляет Свет на сцену
   lightHolder.add(aLight2);
-  
 
+  // Создание сферы, которую мы будем видеть — для скрытия заднего вида самой карты
+  const geomHide = new THREE.SphereBufferGeometry(1.0499, 64, 36);
+  const matHide=new THREE.MeshStandardMaterial({color:new THREE.Color(0x091e5a)});
+  const meshHide= new THREE.Mesh(geomHide, matHide);
 
-  const geometry = new THREE.IcosahedronGeometry(1.0,2);
-
-  // Создание материала для икосахедрона (сферы)
-  const materialIcosahedron = new THREE.MeshBasicMaterial({
-    opacity: 0,
-    transparent: true
-  });
+  //Добавляем объекты на сцену
+  scene.add(meshHide);
 
   // Создание некоторого абстрактного объекта (переводится — сетка)
   const mesh = new THREE.Mesh(geometry,materialIcosahedron);
   // Установим родителя для всех элементов, к которым будет далее применена некоторая анимация...
   const parent=mesh;
-
-  // Создание сферы, которую мы будем видеть — для скрытия заднего вида самой карты
-  const geomHide = new THREE.SphereBufferGeometry(1.0499, 64, 36);
-  const matHide=new THREE.MeshStandardMaterial({color:new THREE.Color(0x091e5a)}); //0x340345
-  const meshHide= new THREE.Mesh(geomHide, matHide);
-
-  //Добавляем объекты на сцену
-  scene.add(meshHide);
   scene.add(lightHolder);
 
-  scene.add(mesh) // Добавил основной прозрачный (скрытый от глаз объект на сцену), он послужит «родителем» для остальных...
-  // Функция добавления данных на карту планеты
-  
-
-  function addMapInf(posCil1,posCir2,main=false){
-    // Принимает парамерты://posCil1 => array(1,2,3)//posCil2 => array(1,2,3)//main => boolean
-    let mainSize=null// если main = true, то значит это ПЕРВЫЙ «флагшток» (освновная позиция на карте)
-    let mSC=null// размер круга под цилиндром
-    let color=0x008DFB;//цвет по умолчанию — это цвет НЕглавных «флагштоков»
-    if(main){// если это первый «флагшток»
-        mainSize=[.004,.004,.3,3];
-        mSC=[.017,24];
-        color=0x86c3f9
-    }else{ // если остальные флагштоки, то их размер чуть меньше основного
-        mainSize=[.002,.002,.16,4]
-        mSC=[.01,12]
-    };
+  /* !!!WARN!!! Planet 2-2 */
+    scene.add(mesh) // Добавил основной прозрачный (скрытый от глаз объект на сцену), он послужит «родителем» для остальных...
+    // Функция добавления данных на карту планеты
+    function addMapInf(posCil1,posCir2,main=false){
+      // Принимает парамерты://posCil1 => array(1,2,3)//posCil2 => array(1,2,3)//main => boolean
+      let mainSize=null// если main = true, то значит это ПЕРВЫЙ «флагшток» (освновная позиция на карте)
+      let mSC=null// размер круга под цилиндром
+      let color=0x008DFB;//цвет по умолчанию — это цвет НЕглавных «флагштоков»
+      if(main){// если это первый «флагшток»
+          mainSize=[.004,.004,.3,3];
+          mSC=[.017,24];
+          color=0x86c3f9
+      }else{ // если остальные флагштоки, то их размер чуть меньше основного
+          mainSize=[.002,.002,.16,4]
+          mSC=[.01,12]
+      };
       // Создание цилиндра
       const cyl=new THREE.CylinderBufferGeometry(mainSize[0],mainSize[1],mainSize[2],mainSize[3]);
       const cylinder=new THREE.Mesh(
         cyl,
         new THREE.MeshBasicMaterial({color})
       );
-      
-      // Нет необходимости направлять цилиндр к центру
-      //cylinder.lookAt(new THREE.Vector3());
-
+      // Установим позицию цилиндра, которая приходит из заданных нами координат
       cylinder.position.set(posCil1[0],posCil1[1],posCil1[2]);
-
-      //scene.add(cylinder);// Добавим на сцену — это можно НЕ делать, так как мы и так добавим это на сцену кодом ниже
       parent.add(cylinder);// Добавим к родительскому элементу для дальнейшей анимации (в других уроках)
-
       // Видимо, далее по коду моей планеты, есть место, где мне необходим только лишь цилиндр (без круга внизу)
       if(posCir2==''){return [cylinder]}
-
       // Создаём окружность под цилиндром
       const circLocation = new THREE.CircleBufferGeometry(mSC[0],mSC[1]);
-
       // «Засунем» цилиндр в mesh и применим к нему материал...
       const circleLocation = new THREE.Mesh(
           circLocation,
           new THREE.MeshBasicMaterial({color, side: THREE.DoubleSide})
       );
-
       // Устанавливаем ему позицию — с помощью заранее определённых данных
       circleLocation.position.set(posCir2[0],posCir2[1],posCir2[2]);
-
       //Указываем ему «смотреть» в начало координат (нулевую точку), чтобы он как бы был над поверхностью планеты
       circleLocation.lookAt(new THREE.Vector3());
-
-      //scene.add(circleLocation);
-
       // Добавляем окружность под цилиндром
       parent.add(circleLocation);
-
       // Функция возвращает два объекта в виде массива
       // Объекты представляют из себя ранее созданные 3D-объекты — JS Object
       return [cylinder,circleLocation]
-  }
-
-    // Вызываю функцию создания элемнтов карты («флагшток №1»)
-    //                данные определил заранее, руками, попробуйте их менять — увидите, как это трудно
-/*     const c1=addMapInf([.66,.95,-.28],[.662,.8,-.28],true)
-
-    // Анимирую появление «флагштока» — высокого цилиндра
-    anime({
-      targets:c1[0].scale,// указываем цель анимации — «scale» — увеличение чего-то
-      x:[0,1],// увеличивает с 0 до 1 по оси X
-      y:[0,1],// увеличивает с 0 до 1 по оси Y
-      z:[0,1],// увеличивает с 0 до 1 по оси Z
-      duration:2000,// время выполнения самой анимации
-      delay:1100,// задержка перед выполнением анимации
-      easing:'easeOutBounce' // тип перехода анимации — лучше всего выбирать «linear»
-    }); */
-
-    // Анимирую появление круга под цилиндром
-//    anime({targets:c1[1].scale,x:[0,1],y:[0,1],z:[0,1],duration:2000,easing:'linear'});
-
+    }
   /* \ !!!WARN!!! Planet 2-2 */
 
-    /* !!!WARN!!! Planet 2-3 */
-    /* Text */
+    /* !!!WARN!!! Planet 2-3 *//* Text */
     const fontLoader=new THREE.FontLoader();
     fontLoader.load('fonts/font-roboto.json', font =>{
         function createText(text,pos,rot,size,font,color=0xffffff){
@@ -147,76 +103,155 @@ const scene = new THREE.Scene()
             font,
             size,
             height: .008,
-            curveSegments: 12,
-            /* bevelEnabled: true,
-            bevelThickness: 10,
-            bevelSize: 8,
-            bevelOffset: 0,
-            bevelSegments: 5 */
+            curveSegments: 12
           } );
-          const textMaterial=new THREE.MeshBasicMaterial({
-              color,
-              side:THREE.FrontSide
-          });
+          const textMaterial=new THREE.MeshBasicMaterial({color,side:THREE.FrontSide});
           text=new THREE.Mesh(textGeo,textMaterial);
           text.position.set(pos[0],pos[1],pos[2]);
           text.rotation.set(rot[0],rot[1],rot[2]);
           /* text.updateMatrix(); */
-          scene.add(text);
+          //scene.add(text);
           parent.add(text);
           return text;
       }
-      const txt1=createText('The center of the earth',[.617,.97,-.14],[0,1.95,0],.03,font);
-      const txt2=createText('Saint-Petersburg',[.617,.91,-.14],[0,1.95,0],.03,font,0x84B3DF);
-        const mainPos=[.662,.8,-.28];
-        anime.timeline().add({
-            targets:txt1.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear'
-        }).add({
-            targets:txt2.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,delay:100,easing:'linear',complete:()=>{
-                //(main)
-                let c1=addMapInf([.66,.95,-.28],mainPos,true);
-                anime({targets:c1[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:100,easing:'linear'});
-                anime({targets:c1[1].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,easing:'linear'});
-            }
-          })
-    });
-    //\TEXT+
+
+                  /* !!!WARN!!! Planet 2-8 */
+                  const loader = new THREE.TextureLoader();
+                  // load a resource
+                  let meshTexture;
+                  loader.load(
+                      'media/logo.png',
+                      ( texture )=>{
+                          const material = new THREE.MeshBasicMaterial({map: texture,side: THREE.DoubleSide,alphaTest:.6});
+                          meshTexture = new THREE.Mesh(new THREE.PlaneGeometry(.435,.1),material);
+                          meshTexture.position.set(.62,1.05,-.47);
+                          meshTexture.rotation.set(0,1.95,0);
+                          meshTexture.scale.set(0,0,0);
+                          //scene.add(meshTexture)
+                          parent.add(meshTexture)
+
+                          const mainPos=[.662,.8,-.28];
+                          const txt1=createText('3D',[.6,1.1,-.68],[0,1.95,0],.05,font)
+                          const txt2=createText('Planet',[.6,1.0,-.68],[0,1.95,0],.05,font,0x0086ff);
+
+                          const txt3=createText('Europe',[.617,.97,-.14],[0,1.95,0],.03,font);
+                          const txt4=createText('Luxembourg',[.617,.91,-.14],[0,1.95,0],.03,font,0x84B3DF);
+                              const txt5=createText('Europe',[.88,.68,-.23],[0,1.95,0],.03,font);
+                              const txt6=createText('Malta',[.88,.62,-.23],[0,1.95,0],.03,font,0x84B3DF);
+                          const txt7=createText('Europe',[.56,.89,.49],[0,1.2,0],.03,font);
+                          const txt8=createText('London',[.56,.83,.49],[0,1.2,0],.03,font,0x84B3DF);
+                              const txt9=createText('North America',[-0.7738271,.83213199,.228805],[0,-1.3,0],.03,font);
+                              const txt10=createText('USA',[-0.7738271,.78213199,.228805],[0,-1.3,0],.03,font,0x84B3DF);
+                          const txt11=createText('North America',[-.2,.9,.69],[0,-.4,0],.03,font);
+                          const txt12=createText('USA',[-.2,.84,.69],[0,-.4,0],.03,font,0x84B3DF);
+                              const txt13=createText('Eurasia',[.245,.46,-.968],[0,3.1,0],.03,font);
+                              const txt14=createText('Hong Kong',[.245,.41,-.968],[0,3.1,0],.03,font,0x84B3DF);
+                          const txt15=createText('Eurasia',[.52,.11,-.915],[0,2.6,0],.03,font);
+                          const txt16=createText('Singapore',[.52,.06,-.915],[0,2.6,0],.03,font,0x84B3DF);
+
+
+                          /* animejs.timeline()
+                          .add({
+                            targets:meshTexture.scale,x:[0,.7],y:[0,.7],z:[0,1],duration:600,delay:600,easing:'linear',complete:()=>{
+                              createMeshLine(createCurve({q:[.63,.84,-.13],w:[.7,.8,-.2],e:mainPos}))
+                            }
+                          })
+                          .add({
+                              targets:txt1.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear'
+                          }).add({
+                              targets:txt2.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,delay:1000,easing:'linear',complete:()=>{
+                                  //(main)
+                                  let c1=addMapInf([.66,.95,-.28],mainPos,true);
+                                  animejs({targets:c1[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:100,easing:'linear'});
+                                  animejs({targets:c1[1].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,easing:'linear'});
+                              }
+                            }) */
+                            animejs.timeline()
+                            .add({
+                              targets:meshTexture.scale,x:[0,.7],y:[0,.7],z:[0,1],duration:600,delay:600,easing:'linear'
+                            })
+                            .add({
+                              targets:txt1.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear'
+                            })
+                            .add({
+                              targets:txt2.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',complete:()=>{
+                                  //(main)
+                                  let c1=addMapInf([.66,.95,-.28],mainPos,true);
+                                  animejs({targets:c1[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:100,easing:'linear'});
+                                  animejs({targets:c1[1].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,easing:'linear'});
+                              }
+                          }).add({
+                              targets:txt3.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear'
+                          }).add({//lux
+                              targets:txt4.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',complete:()=>{
+                                  createMeshLine(createCurve({q:[.63,.84,-.13],w:[.7,.8,-.2],e:mainPos}))
+                                  const c2=addMapInf([.63,.92,-.13],[.63,.84,-.13]);
+                                  animejs({targets:c2[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:100,easing:'linear'});
+                                  animejs({targets:c2[1].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,easing:'linear'});
+                              }
+                          }).add({
+                              targets:txt5.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear'
+                          }).add({//Malta
+                              targets:txt6.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',complete:()=>{
+                                  createMeshLine(createCurve({q:[.89,.55,-.2139],w:[1,.7,-.3],e:mainPos}))
+                                  const c4=addMapInf([.89,.63,-.2139],[.89,.55,-.2139]);
+                                  animejs({targets:c4[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:100,easing:'linear'});
+                                  animejs({targets:c4[1].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,easing:'linear'});
+                              }
+                          }).add({
+                              targets:txt7.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear'
+                          }).add({//lond
+                              targets:txt8.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',complete:()=>{
+                                  createMeshLine(createCurve({q:[.54,.75,.5],w:[.8,1,.2],e:mainPos}))
+                                  const c3=addMapInf([.54,.83,.5],[.54,.75,.5]);
+                                  animejs({targets:c3[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:100,easing:'linear'});
+                                  animejs({targets:c3[1].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,easing:'linear'});
+                              }
+                          }).add({
+                              targets:txt11.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',//delay:25000
+                          }).add({//usa 2
+                              targets:txt12.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',complete:()=>{
+                                  createMeshLine(createCurve({q:[-0.2138805, 0.773827135, 0.692131996],w:[.9,.9,1.2],e:mainPos}))
+                                  const c6=addMapInf([-.2139,.85,.6921],[-0.2138805, 0.773827135, 0.692131996]);
+                                  animejs({targets:c6[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:2000,easing:'linear'});
+                              }
+                          }).add({
+                              targets:txt9.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',//delay:31000
+                          }).add({//usa
+                              targets:txt10.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',complete:()=>{
+                                  createMeshLine(createCurve({q:[-.7738271,.69213199,.21388055],w:[.5,1.6,1.2],e:mainPos}))
+                                  const c5=addMapInf([-0.7738271,.777,.2138805],[-.7738271,.69213199,.21388055]);
+                                  animejs({targets:c5[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:2000,easing:'linear'});
+                              }
+                          }).add({
+                             targets:txt13.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',//delay:51000
+                          }).add({//hong
+                              targets:txt14.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',complete:()=>{
+                                  createMeshLine(createCurve({q:[.25,.33,-.968],w:[.6,1,-1.5],e:mainPos}))
+                                  const c7=addMapInf([.25,.41,-.968],[.25,.33,-.968]);
+                                  animejs({targets:c7[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:100,easing:'linear'});
+                                  animejs({targets:c7[1].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,easing:'linear'});
+                              }
+                          }).add({
+                         targets:txt15.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,delay:15000,easing:'linear'
+                      }).add({//Singapore
+                             targets:txt16.scale,x:[0,1],y:[0,1],z:[0,1],duration:600,easing:'linear',complete:()=>{
+                                  createMeshLine(createCurve({q:[.53,-.02,-.92],w:[1,1.2,-1],e:mainPos}))
+                                  const c8=addMapInf([.53,.06,-.915],[.53,-.02,-.92]);
+                                  animejs({targets:c8[0].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,delay:100,easing:'linear'});
+                                  animejs({targets:c8[1].scale,x:[0,1],y:[0,1],z:[0,1],duration:1000,easing:'linear'});
+                             }
+                          });
+
+                      },
+                      undefined,
+                      function(e){console.error( e )}
+                  );
+                  /* \ !!!WARN!!! Planet 2-8 */
+    });//\TEXT+
     /* \ !!!WARN!!! Planet 2-3 */
-
-      /* !!!WARN!!! Planet 2-4 */
-
-      const loader = new THREE.TextureLoader();
-
-      // load a resource
-      loader.load(
-        'media/logo.png',
-        function ( texture ) {
-            const material = new THREE.MeshBasicMaterial( {
-                map: texture,
-                side: THREE.DoubleSide,
-                alphaTest:.6
-            });
-            const meshTexture = new THREE.Mesh(
-                new THREE.PlaneGeometry(.435,.1),
-                material
-            );
-            meshTexture.position.set(.62,1.05,-.47);
-            meshTexture.rotation.set(0,1.95,0);
-            meshTexture.scale.set(0,0,0);
-            scene.add(meshTexture)
-            parent.add(meshTexture)
-            anime({targets:meshTexture.scale,x:[0,.7],y:[0,.7],z:[0,1],duration:600,easing:'linear'})
-          },
-          undefined,
-          function ( e ) {
-              console.error( e );
-          }
-      );
-
-       /* !!!WARN!!! Planet 2-5 */
-        // Массив точек для «бум» — это в след. уроках..
-        const circlePointsAr=[
-          //(main)
+        /* !!!WARN!!! Planet 2-5 */// Массив точек для «бум»
+        const circlePointsAr=[//(main)
           [.662,.775,-.28],
           [.63,.84,-.13],//lux
           [.89,.55,-.2139],
@@ -250,20 +285,24 @@ const scene = new THREE.Scene()
             obj.data = obj.cnt.getImageData(0, 0, obj.w, obj.h)  
             obj.data = obj.data.data;// Возьмём точки из canvas
             obj.ar=[];
-            // ** Код ниже для shader (для будущих уроков)
-            const impacts = [];
-            for (let i = 0; i < circlePointsAr.length; i++) {
-                impacts.push({
+            // ** Код ниже для shader
+            const impacts = [];// Некий пустой массив, куда будут добавлены данные с координатами «бум»
+            for (let i = 0; i < circlePointsAr.length; i++) {// пройдёмся по заранее указанным точкам
+                impacts.push({// Добавим в массив для шейдера данные
+                  // позиция «бума»
                     impactPosition:new THREE.Vector3(circlePointsAr[i][0],circlePointsAr[i][1],circlePointsAr[i][2]),
-                    impactMaxRadius: THREE.Math.randFloat(0.0001, 0.0002),
-                    impactRatio: 0.01
+                  //радиус бума (задаётся случайное число от 0.0001 до 0.002)
+                    impactMaxRadius: THREE.Math.randFloat(0.0001, 0.002),
+                  // некоторый коэфициент
+                    impactRatio: .01
                 });
             }
+            // необходимо для шейдера
             let uniforms = {
+              // передаём этому объекту «impacts» данные из массива «impacts»
                 impacts: {value: impacts}
             }
             // \ **
-
             // Важный код. Наполним массив точками из данных из canvas
             for(let y = 0; y < obj.w; y++) {// по оси Y
                 for(let x = 0; x < obj.w; x++) {// по оси X
@@ -292,17 +331,14 @@ const scene = new THREE.Scene()
             const lonFudge=Math.PI*.5;
             const latFudge=Math.PI*-0.135;
             const geometries=[];
-    
-
             obj.nAr=[];
             obj.counter=0;
             obj.counter2=0;
-
             // Материал с шейдером, который поможет скруглить PlaneBufferGeometry и анимировать, сделать «бум»
             const materialCircles=new THREE.MeshBasicMaterial({
-                color:0xffffff,
-                side:THREE.FrontSide,
-                onBeforeCompile: shader => {
+                //color:0xffffff, // Можно НЕ указывать здесь цвет, так как он формируется FragmentShader'ом
+                side:THREE.FrontSide,// Видимая часть — передняя (THREE.FrontSide) | THREE.DoubleSide | THREE.BackSide
+                onBeforeCompile: shader => {// позиционный или точечный шейдер
                     shader.uniforms.impacts = uniforms.impacts;
                     shader.vertexShader = `
             struct impact {
@@ -318,34 +354,32 @@ const scene = new THREE.Scene()
                         `#include <begin_vertex>
             float finalStep = 0.0;
             for (int i = 0; i < ${circlePointsAr.length};i++){
-    
               float dist = distance(center, impacts[i].impactPosition);
               float curRadius = impacts[i].impactMaxRadius * impacts[i].impactRatio/2.;
               float sstep = smoothstep(0., curRadius*1.8, dist) - smoothstep(curRadius - ( .8 * impacts[i].impactRatio ), curRadius, dist);
               sstep *= 1. - impacts[i].impactRatio;
               finalStep += sstep;
-    
             }
             finalStep = clamp(finalStep*.5, 0., 1.);
             transformed += normal * finalStep * 0.25;
-            `
-                    );
+            `);
                     //console.log(shader.vertexShader);
                     // Этот кусочек кода отвечает за «цветовой» шейдер, который и будет скруглять наш PlaneBufferGeometry
+                    // и задавать ему определённый цвет
                     shader.fragmentShader = shader.fragmentShader.replace(
                         `vec4 diffuseColor = vec4( diffuse, opacity );`,
                         `
             if (length(vUv - 0.5) > 0.5) discard;
-            vec4 diffuseColor = vec4( vec3(.7,.7,.7), .1 );
+            vec4 diffuseColor = vec4( vec3(.7,.7,.7), 1.0 );
             `);
                 }
     
             });
-            materialCircles.defines = {"USE_UV" : ""};
+            materialCircles.defines = {"USE_UV" : ""};//https://www.khronos.org/webgl/wiki/WebGL_and_OpenGL_Differences
     
             let uty0=0
             // Проходимся по массиву наших точек («кружочков»)
-            obj.ar.map(e=>{
+            obj.ar.forEach(e=>{
                 uty0++
                 obj.counter2++;
                 const geometry=new THREE.PlaneBufferGeometry(0.005,0.005);
@@ -372,21 +406,109 @@ const scene = new THREE.Scene()
             //meshCircles = new THREE.Mesh(geometryCircles, new THREE.MeshBasicMaterial({color:0xffffff}));
 
             // Добавим на сцену наш новый объект (саму карту)
-            scene.add(meshCircles);
+            //scene.add(meshCircles);
 
             //Добавим новый объект (саму карту) к родительскому элементу
             parent.add(meshCircles);
 
             // Немного увеличим наш новый объект, чтобы все «кружочки» были над поверхностью планеты
             meshCircles.scale.set(1.051,1.051,1.051)
-    
             obj.c.remove();// Удалим временный canvas из которого брали точки
             obj.s.remove()// Удалим временные стили
+              /* !!!WARN!!! Planet 2-7 (продолжение 2-5) */
+                const tweens2 = [];// Некий массив для анимаций (твинов)
+                for (let i = 0; i < circlePointsAr.length; i++) {// проходимся по массиву с заранее заданным точками «бума»
+                    tweens2.push({// добавляем в массив анимаций эту точку и указываем, что именно анимировать
+                        runTween:()=>{
+                            const tween=new TWEEN.Tween({value:0})
+                                .to(
+                                  { value: 1 },// желательно оставиь 1
+                                  THREE.Math.randInt(2500,5000) // формируем некое случайное числов от 2500 до 5000 — время анимации «бум» | попробуйте поставить 5000, 15000
+                                )
+                                .onUpdate(val=>{// во время обновления также меняем коэффициент
+                                    uniforms.impacts.value[i].impactRatio = val.value;
+                                })
+                                .onComplete(()=>{
+                                    uniforms.impacts.value[i].impactPosition=new THREE.Vector3(circlePointsAr[i][0],circlePointsAr[i][1],circlePointsAr[i][2]);// указываем позицию из заранее опредеёлнных точек
+                                    uniforms.impacts.value[i].impactMaxRadius = 5 * THREE.Math.randFloat(0.5, 0.75);
+                                    tweens2[i].runTween();// указываем расстояние, на сколько будет разлетаться «бум» | попробуйте поставить 0.75,1.2
+                                });
+                            tween.start();//запускаем эту анимацию
+                        }
+                    });
+                }
+                tweens2.forEach(t=>{t.runTween()});// запускаем цепочку анимаций
+              /* \ !!!WARN!!! Planet 2-7 */
           }
         /* \ !!!WARN!!! Planet 2-5 */
-/**
- * Sizes
- */
+          /* !!!WARN!!! Planet 2-6 */
+            // Функция создания точек для передачи в MeshLine и создании на их основе линий
+            // Принимает в себя объект, в котором есть три точки {q:[x,y,z],w:[x,y,z],e:[x,y,z]}
+            //Curve
+            function createCurve(q){
+              // Эти штуки необходимы для позиционирования над поверхностью планеты
+              const lonHelper = new THREE.Object3D();
+              scene.add(lonHelper);
+              // We rotate the latHelper on its X axis to the latitude
+              const latHelper = new THREE.Object3D();
+              lonHelper.add(latHelper);
+              // The position helper moves the object to the edge of the sphere
+              const positionHelper = new THREE.Object3D();
+              positionHelper.position.z = .5;
+              latHelper.add(positionHelper);
+              // Used to move the center of the cube so it scales from the position Z axis
+              const originHelper = new THREE.Object3D();
+              originHelper.position.z = 0.5;
+              positionHelper.add(originHelper);
+              // QuadraticBezierCurve3 — создаёт из трёх и более точек кривую Безье
+              const curve = new THREE.QuadraticBezierCurve3(
+                  new THREE.Vector3(q.q[0],q.q[1],q.q[2]),
+                  new THREE.Vector3(q.w[0],q.w[1],q.w[2]),
+                  new THREE.Vector3(q.e[0],q.e[1],q.e[2])
+              );
+              // Возвращаю константу, хотя можно было и просто возвратить результат. Здесь просто её можно залогировать, чтобы понять, что происходит
+              const pointsCurve = curve.getPoints(24);
+              // ... например, так:
+              // console.log(pointsCurve)
+              return pointsCurve;
+            }//\Curve
+            const lineMesh=[]; // Это будет массив, где будут находиться все линии, чтобы анимировать их
+            // Функция создания самой линии (MeshLine)
+            // Принимает в себя значение результата выполнения функции выше
+            // а именно точки Vector3 (из кривой Безье)
+            function createMeshLine(dataFromCreateCurve,flat=null){
+                // Строим геометрию
+                // Здесь я делаю цвета линий немного разными, чтобы разнообразить их
+                let color=new THREE.Color(.2,THREE.Math.randFloat(.5,.8),1);
+                let dashRatio=.5,
+                    lineWidth=.005
+                if(flat){// это линии, которые белые — летят из нашего центра в другие стороны, в отличии от синих линий, которые летят К ЦЕНТРУ (нашему условному центру)
+                    color=new THREE.Color(0xffffff);
+                    dashRatio=.9
+                    lineWidth=.003
+                }
+                const line = new MeshLineGeometry();// экземпляр MeshLine
+                line.setPoints(dataFromCreateCurve);// Передаём ему геометрию из функции выше
+                const geometryl = line.geometry;
+                // Построить материал с параметрами, чтобы оживить его.
+                const materiall = new MeshLineMaterial({
+                    transparent: true, // Необходимо, чтобы была видна анимация, если false, то линия просто будет залита определённым цветом и не будет видна анимация
+                    lineWidth,
+                    color,
+                    dashArray: 2, // всегда должен быть
+                    dashOffset: 0, // начать с dash к zero
+                    dashRatio, // видимая минута ряда длины. Мин: 0.5, Макс: 0.99
+                });
+                // Построение сетки
+                const lineMeshMat = new THREE.Mesh(geometryl, materiall);// Создаём саму линию (Mesh)
+                lineMeshMat.lookAt(new THREE.Vector3())// Здесь можно и не писать это
+                parent.add(lineMeshMat); // Добавим её на сцену
+                //parent.add(lineMeshMat);
+                lineMesh.push(lineMeshMat); // Добавим эту одну линию, созданную выше, в массив для их анимаций
+            }
+            // Позиция основной точки нашей планеты (где сейчас «флагшток»)
+            const mainPos=[.662,.8,-.28];
+          /* \ !!!WARN!!! Planet 2-6 */
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
@@ -397,26 +519,19 @@ window.addEventListener('resize', () =>
     // Update sizes
     sizes.width = window.innerWidth
     sizes.height = window.innerHeight
-
     // Update camera
     camera.aspect = sizes.width / sizes.height
     camera.updateProjectionMatrix()
-
     // Update renderer
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    
 })
-
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(12, sizes.width / sizes.height, 0.1, 200)
-camera.position.set(10.5,4,-3.5);
-camera.setViewOffset(22.46, 10, -2, .5, 17, 9)
-//[расположение по Х, расположение по Z,]
-scene.add(camera)
+  // Камера
+  const camera = new THREE.PerspectiveCamera(12,window.innerWidth / window.innerHeight,.01,100);
+  // Позиция камеры
+  camera.position.set(10.5,4,-3.5);
+  //Как ей «смотреть» — смещаем «куда» она смотрит
+  camera.setViewOffset(10, 10, -2, .5, 9, 9)
 
 // Controls
  const controls = new OrbitControls(camera, canvas)
@@ -425,19 +540,20 @@ scene.add(camera)
 
  controls.minPolarAngle =1.2;
  controls.maxPolarAngle = 1.2;
-/**
- * Renderer
- */
+
+
 const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
+    canvas: canvas,
+    antialias:true
 })
+
+camera.aspect = sizes.width / sizes.height
+camera.updateProjectionMatrix()
+
+// Update renderer
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setClearColor('#000', 1);
-
-/**
- * Animate
- */
 
 const clock = new THREE.Clock()
 const tick = () =>
@@ -446,7 +562,7 @@ const tick = () =>
     const elapsedTime = clock.getElapsedTime()
 
     // Update objects
-    mesh.rotation.y = elapsedTime / 50
+    //mesh.rotation.y = elapsedTime / 20
 
     /* function rotateRadians(deg){
       return deg * (Math.PI / 180);
@@ -469,10 +585,11 @@ const tick = () =>
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 
-    lineMesh.forEach(e=>{
+
+    /*lineMesh.forEach(e=>{
         e.material.uniforms.dashOffset.value -= 0.01
     });
-    TWEEN.update();
+    TWEEN.update();*/
 }
 
 tick();
